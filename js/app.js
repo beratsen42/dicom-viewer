@@ -260,9 +260,17 @@ class App {
       if (this.active && this.active.series === s) item.classList.add('current');
       const usedBy = this.viewports.filter((v, i) => v.series === s && (i === 0 || this.layout === 2)).map((v) => v.id + 1);
       item.innerHTML = `<canvas class="thumb" width="72" height="72"></canvas>
-        <div class="meta"><b></b><span></span></div>
+        <div class="meta"><b></b><div class="chips"></div><span></span></div>
         <div class="badge">${usedBy.length && this.layout === 2 ? usedBy.join(',') : ''}</div>`;
       item.querySelector('b').textContent = s.description;
+      const chips = item.querySelector('.chips');
+      for (const t of s.tags || []) {
+        const c = document.createElement('i');
+        c.className = `chip chip-${t.kind}${t.guess ? ' guess' : ''}`;
+        c.textContent = t.text + (t.guess ? '?' : '');
+        if (t.guess) c.title = 'Çekim parametrelerinden tahmin';
+        chips.appendChild(c);
+      }
       item.querySelector('span').textContent = [s.modality, s.seriesNumber != null ? `#${s.seriesNumber}` : '', `${s.images.length} görüntü`].filter(Boolean).join(' · ');
       s.thumbCanvas = item.querySelector('canvas');
       if (s.thumb) s.thumbCanvas.getContext('2d').drawImage(s.thumb, 0, 0);

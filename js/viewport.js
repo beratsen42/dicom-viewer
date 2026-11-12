@@ -1,6 +1,7 @@
 // One image panel: rendering, touch gestures, measurements and overlays.
 import { spacingOf, normalOf, dot } from './dicom.js';
 import { TS_NAMES } from './decode.js';
+import { tagText } from './sequence.js';
 
 const LOSSY = new Set(['1.2.840.10008.1.2.4.50', '1.2.840.10008.1.2.4.51', '1.2.840.10008.1.2.4.81', '1.2.840.10008.1.2.4.91', '1.2.840.10008.1.2.4.203']);
 const HANDLE_HIT = 26; // css px
@@ -290,6 +291,7 @@ export class Viewport {
       [img.studyDate, img.studyTime].filter(Boolean).join(' '),
       img.studyDescription,
       [img.modality, img.seriesNumber != null ? `Seri ${img.seriesNumber}` : '', img.seriesDescription].filter(Boolean).join(' · '),
+      tagText(this.series.tags || []),
     ]);
     const loc = img.sliceLocation ?? (img.z !== undefined && img.ipp ? img.ipp[2] : undefined);
     this.ov.bl.textContent = lines([

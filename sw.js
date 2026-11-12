@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump VERSION on every release.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = `dicom-viewer-${VERSION}`;
 const FILES = [
   './',
@@ -10,6 +10,7 @@ const FILES = [
   'js/decode.js',
   'js/store.js',
   'js/viewport.js',
+  'js/sequence.js',
   'vendor/dicomParser.min.js',
   'vendor/jszip.min.js',
   'vendor/jpeg-baseline.js',

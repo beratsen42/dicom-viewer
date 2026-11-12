@@ -1,4 +1,5 @@
 // DICOM parsing, metadata extraction and series grouping.
+import { seriesTags } from './sequence.js';
 // Uses the global `dicomParser` (vendor/dicomParser.min.js).
 
 const TS_IMPLICIT_LE = '1.2.840.10008.1.2';
@@ -184,6 +185,16 @@ export function extractImages(ds, source) {
     smallestPixel: undefined,
     imageType: ds.string('x00080008') || '',
     rescaleType: ds.string('x00281054') || '',
+    protocolName: text(ds, 'x00181030', charset),
+    sequenceName: ds.string('x00180024') || '',
+    scanningSequence: ds.string('x00180020') || '',
+    tr: num(ds, 'x00180080'),
+    te: num(ds, 'x00180081'),
+    ti: num(ds, 'x00180082'),
+    contrastAgent: text(ds, 'x00180010', charset),
+    kernel: (ds.string('x00181210') || '').split('\\')[0],
+    viewPosition: ds.string('x00185101') || '',
+    bValue: bValueOf(ds),
   };
 
   // Palette color lookup tables.
@@ -220,6 +231,21 @@ export function extractImages(ds, source) {
     out.push(img);
   }
   return out;
+}
+
+// Diffusion b-value: standard tag, then common vendor private tags.
+function bValueOf(ds) {
+  try {
+    if (ds.elements.x00189087 && ds.elements.x00189087.length === 8) return ds.double('x00189087');
+    const ge = ds.elements.x00431039 && ds.intString('x00431039');
+    if (Number.isFinite(ge)) return ge >= 1e9 ? ge % 1e9 : ge;
+    if (ds.elements.x20011003 && ds.elements.x20011003.length === 4) return ds.float('x20011003');
+    const sv = ds.elements.x0019100c && ds.intString('x0019100c');
+    if (Number.isFinite(sv)) return sv;
+    const m = (ds.string('x00180024') || '').match(/b(\d{2,4})/);
+    if (m) return Number(m[1]);
+  } catch { /* ignore malformed private tags */ }
+  return undefined;
 }
 
 function readPalette(ds) {
@@ -294,6 +320,7 @@ export function buildSeries(images) {
       studyDate: first.studyDate,
       patientName: first.patientName,
     });
+    series[series.length - 1].tags = seriesTags(series[series.length - 1]);
   }
   series.sort((a, b) =>
     (a.studyDate || '').localeCompare(b.studyDate || '') ||
