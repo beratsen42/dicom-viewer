@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>DICOM Görüntüleyici</title>
+  <meta name="description" content="iPhone için çevrimdışı DICOM görüntüleyici. Görüntüler cihazdan çıkmaz.">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DICOM">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="vendor/dicomParser.min.js"></script>
+  <script src="vendor/jszip.min.js"></script>
+</head>
+<body class="no-data">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-open" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/></symbol>
+      <symbol id="i-series" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+      <symbol id="i-layout" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></symbol>
+      <symbol id="i-sync" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+      <symbol id="i-scroll" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 16.5l9 5 9-5"/></symbol>
+      <symbol id="i-wl" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></symbol>
+      <symbol id="i-pan" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></symbol>
+      <symbol id="i-length" viewBox="0 0 24 24"><path d="M6 18L18 6"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/></symbol>
+      <symbol id="i-roi" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="6.5"/><path d="M12 11.5v1"/></symbol>
+      <symbol id="i-presets" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+      <symbol id="i-invert" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 20L20 4v14a2 2 0 0 1-2 2z" fill="currentColor"/></symbol>
+      <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></symbol>
+      <symbol id="i-flip" viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M8 7l-5 5 5 5z"/><path d="M16 7l5 5-5 5z"/></symbol>
+      <symbol id="i-delete" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+      <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v5h5"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    </defs>
+  </svg>
+
+  <header id="topbar">
+    <button id="btn-series" class="tb" aria-label="Seriler"><svg><use href="#i-series"/></svg><span>Seriler</span></button>
+    <button id="btn-open" class="tb" aria-label="Dosya aç"><svg><use href="#i-open"/></svg><span>Aç</span></button>
+    <div class="spacer"></div>
+    <button id="btn-layout" class="tb" aria-label="İkili görünüm"><svg><use href="#i-layout"/></svg><span>İkili</span></button>
+    <button id="btn-sync" class="tb" aria-label="Kesit eşle" style="display:none"><svg><use href="#i-sync"/></svg><span>Eşle</span></button>
+    <button id="btn-info" class="tb on" aria-label="Bilgi"><svg><use href="#i-info"/></svg><span>Bilgi</span></button>
+  </header>
+
+  <main id="panels" data-layout="1">
+    <div id="empty">
+      <div class="empty-card">
+        <h1>DICOM Görüntüleyici</h1>
+        <p>Dosyalar uygulamasından DICOM dosyalarını veya bir ZIP seçin. Birden çok dosyayı aynı anda seçebilirsiniz.</p>
+        <button id="empty-open" class="primary">Dosya aç</button>
+        <p class="small">Görüntüler bu cihazda kalır. Hiçbir sunucuya gönderilmez.</p>
+      </div>
+    </div>
+  </main>
+
+  <nav id="toolbar">
+    <div class="group">
+      <button class="tool" data-tool="scroll"><svg><use href="#i-scroll"/></svg><span>Kesit</span></button>
+      <button class="tool" data-tool="wl"><svg><use href="#i-wl"/></svg><span>Pencere</span></button>
+      <button class="tool" data-tool="pan"><svg><use href="#i-pan"/></svg><span>Taşı</span></button>
+      <button class="tool" data-tool="length"><svg><use href="#i-length"/></svg><span>Uzunluk</span></button>
+      <button class="tool" data-tool="roi"><svg><use href="#i-roi"/></svg><span>ROI</span></button>
+    </div>
+    <div class="sep"></div>
+    <div class="group">
+      <button class="tool" id="btn-presets"><svg><use href="#i-presets"/></svg><span>Ayarlar</span></button>
+      <button class="tool" id="btn-invert"><svg><use href="#i-invert"/></svg><span>Ters</span></button>
+      <button class="tool" id="btn-rotate"><svg><use href="#i-rotate"/></svg><span>Döndür</span></button>
+      <button class="tool" id="btn-flip"><svg><use href="#i-flip"/></svg><span>Çevir</span></button>
+      <button class="tool" id="btn-delete"><svg><use href="#i-delete"/></svg><span>Sil</span></button>
+      <button class="tool" id="btn-reset"><svg><use href="#i-reset"/></svg><span>Sıfırla</span></button>
+    </div>
+  </nav>
+
+  <div id="scrim"></div>
+
+  <aside id="drawer" aria-label="Seriler">
+    <div class="drawer-head">
+      <b>Seriler</b>
+      <button id="drawer-close" class="icon" aria-label="Kapat"><svg><use href="#i-close"/></svg></button>
+    </div>
+    <div id="series-list"></div>
+    <p id="drawer-empty" class="muted">Henüz dosya yok.</p>
+    <div class="drawer-foot">
+      <button id="drawer-open" class="primary">Dosya ekle</button>
+      <button id="drawer-clear" class="ghost">Hepsini kapat</button>
+    </div>
+  </aside>
+
+  <section id="presets" aria-label="Pencere ayarları">
+    <div class="presets-head"><b>Pencere ayarı</b><small>Seviye / Genişlik</small></div>
+    <div id="preset-grid"></div>
+    <p id="preset-note" class="muted"></p>
+  </section>
+
+  <div id="loading"><div class="spin"></div><span id="loading-text"></span></div>
+  <div id="toast"></div>
+
+  <input id="file-input" type="file" multiple hidden>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
